@@ -6,7 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+.vscode/
+
 # Distribution / packaging
+aoc-venv/
 .Python
 build/
 develop-eggs/
