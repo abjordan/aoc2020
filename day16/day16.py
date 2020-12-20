@@ -58,10 +58,10 @@ print(f'Found {len(valid_tickets)} valid tickets out of {len(tickets)}')
 # all the tickets are valid for.
 
 from collections import defaultdict
-valid_assignments = defaultdict(list)
+possible_assignments = defaultdict(set)
 
 parsed_tickets = []
-for ticket in tickets:
+for ticket in valid_tickets:
     parsed_tickets.append( [int(f) for f in ticket.strip().split(',')] )
 
 # Go through each column and figure out which possible fields it could be
@@ -76,7 +76,7 @@ for i in range(0, len(parsed_tickets[0])):
             else:
                 valid = False
         if valid:
-            valid_assignments[clz].append(i)
+            possible_assignments[clz].add(i)
         else:
             pass
             #print('INVALID!')
@@ -86,14 +86,53 @@ for i in range(0, len(parsed_tickets[0])):
 # every other field. E.g., if class = [1, 2] and seat = [2], then we can
 # get rid of 2 from class's list
 
-print(valid_assignments)
+#print(possible_assignments)
 
-assigned = set([])
+assigned = {}
 
-for clz, possibles in valid_assignments.items():
+for clz, possibles in possible_assignments.items():
     if len(possibles) == 1:
-        assigned.add(clz)
+        assigned[clz] = list(possibles)[0]
 
+if not len(assigned) > 0:
+    # Note that there's a dynamic programming approach to actually solving 
+    # the problem in this case, but unless we need it, we'll avoid 
+    # implementing it as it's a lot of work.
+    print('Hmmm... Could not find any valid initial assignments. Punting.')
+    sys.exit(1)
+
+# Reduction pass - until everything is assigned, go through and remove
+# anything that's been assigned
+loop_count = 0
+keep_going = True
+while keep_going:
+    keep_going = False
+    loop_count += 1
+    for clz, possibles in possible_assignments.items():
+        if len(possibles) == 1:
+            #print(f'{clz} is done')
+            assigned[clz] = list(possibles)[0]
+        else:
+            #print(f'Need to reduce {clz}: {possibles} --> {possibles - set(assigned.values())}')
+            possible_assignments[clz] = possibles - set(assigned.values())
+            keep_going = True
+    #print('------------------')
+
+print(f'Terminated at {loop_count} iterations')
 print(assigned)
 
-# Wow -- that *really* doesn't work. Back to the drawing board...
+my_ticket_values = {}
+my_ticket = mine.split('\n')[1]
+inv_map = {v: k for k, v in assigned.items()}
+print(inv_map)
+for offset, value in enumerate( [int(f) for f in my_ticket.strip().split(',')] ):
+    print(offset, value)
+    name = inv_map[offset]
+    my_ticket_values[name] = value
+
+ret = 1
+for key, val in my_ticket_values.items():
+    if key.startswith('departure'):
+        ret *= val
+
+print(f'Multiplying all departure classes together: {ret}')
